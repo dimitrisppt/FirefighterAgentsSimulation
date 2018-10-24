@@ -19,6 +19,15 @@ to setupSimulationEnvironment
   create-boundary
   setup-trees
   setup-units
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  display-water-units
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   reset-ticks
 end
 
@@ -74,6 +83,15 @@ to run-experiment
   start-fire-probability
   ask units [without-interruption [execute-behaviour]]
   ask fires [without-interruption [fire-model-behaviour]]
+
+  ;Edited Code
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  tick
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 end
 
 ;;; starts randonly a fire according to a probability (10%)
@@ -130,50 +148,81 @@ end
 ;;; Agent has sensors, effectors (actions) and a behaviour (reactive)
 ;;; This procedure determines the agent's behaviour, encoded as reactive rules.
 to execute-behaviour
-  
-   ifelse show-water-units?
-         [ set label water ]
-         [ set label "" ]
-         
-   if detect-obstacle [avoid-obstacle stop]
-   
-   while [detect-fire and have-water]
-      [put-out-fire
-       move-randomly]
-   
+
+   ; Prioritises the action to "put-out-fire", when the agent detects a fire
+   ; and the amount of water that they carry is not empty.
+   if detect-fire and have-water [put-out-fire stop]
+
+   ; If the fire unit used all of the water supplies that they could carry and
+   ; the location of the fire unit is at the base station then the action "service-unit" gets executed,
+   ; which means that the fire-unit is refilled with water.
+   ; If the fire unit needs water but is not at the base station yet, it executes the action "move-towards-base"
+   ; which sends signal of the location of the base station and makes the fire unit to move there.
    if need-water [
-     ifelse at-base
-       [service-unit]
-       [move-towards-base]   
+     ifelse at-base [service-unit stop]
+     [move-towards-base stop]
    ]
-   
-   if at-base and water < initial-water
-     [service-unit]
-     
-   
-   
-   ;ifelse detect-fire [
-    ; if have-water
-     ;  [put-out-fire]  
-   ;]
-   move-randomly stop   
+
+   ; In the case where the fire unit passes from the base station, and
+   ; their water capacity is not full (less than the initial water capacity),
+   ; then the "service-unit" action gets executed which refills the water tank
+   ; of the fire unit.
+   if at-base and water < initial-water [service-unit stop]
+
+   ; If the fire unit detects obstacle in their way while moving then
+   ; it will try to avoid it, by turning randomly.
+   if detect-obstacle [avoid-obstacle stop]
+
+   ; Updates the water units of each agent, in case they have used water,
+   ; or they have refilled their tank.
+   display-water-units
+
+   ; Makes the agent to move to a random direction,
+   ; first it moves and then it turns randomly.
+   if true [move-randomly stop]
+
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+   ;while [detect-fire and have-water]
+    ;  [put-out-fire
+     ;  move-randomly]
+
    ;if need-water [
-    ;  ifelse at-base
-     ;   [service-unit]
-      ;  [move-towards-base]   
+    ; ifelse at-base
+     ;  [service-unit stop]
+      ; [move-towards-base stop]
    ;]
+
+;   if at-base and water < initial-water
+ ;    [service-unit stop]
+  ; display-water-units
+   ;move-randomly stop
+
+
    ;if true [move-randomly stop]
-   
+
 end
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; If the "show-water-units" is enabled then
+; the amount of water that each fire unit carries
+; is visible.
+to display-water-units
+  ask units [ set label "" ]
+  if show-water-units? [
+    ask units [ set label water ]
+  ]
+end
 
-
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
